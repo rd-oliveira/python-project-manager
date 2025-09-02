@@ -70,7 +70,9 @@ class App:
 
     def settings(self, e):
         self.navigate_to(
-            Configuration(on_return=lambda: self.navigate_to(self.get_main_interface()))
+            Configuration(
+                self.page, on_return=lambda: self.navigate_to(self.get_main_interface())
+            )
         )
 
     def get_main_interface(self):
@@ -82,7 +84,7 @@ class App:
             controls=[header, body],
             expand=True,
         )
-    
+
     def navigate_to(self, component: ft.Control):
         self.page.clean()
         self.page.add(component)

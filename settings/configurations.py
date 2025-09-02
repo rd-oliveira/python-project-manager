@@ -2,13 +2,19 @@ import flet as ft
 
 
 class Configuration(ft.Column):
-    def __init__(self, on_return):
+    def __init__(self, page: ft.Page, on_return):
         super().__init__(expand=True)
 
         self.on_return_callback = on_return
         self.alignment = ft.MainAxisAlignment.CENTER
         self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         self.spacing = 20
+
+        self.page = page
+        self.path = None
+
+        file_dialog = ft.FilePicker(on_result=self.search_directory)
+        self.page.overlay.append(file_dialog)
 
         # Title
         title = ft.Text(
@@ -18,11 +24,13 @@ class Configuration(ft.Column):
         )
 
         # Entries
-        txt_path = ft.TextField(label="project path")
+        self.txt_path = ft.TextField(label="project path", disabled=True)
 
         # Buttons
         btn_folder = ft.IconButton(
-            icon=ft.Icons.FOLDER, icon_size=30, on_click=self.search_directory
+            icon=ft.Icons.FOLDER,
+            icon_size=30,
+            on_click=file_dialog.get_directory_path,
         )
         btn_return = ft.ElevatedButton(
             text="← Back",
@@ -38,7 +46,7 @@ class Configuration(ft.Column):
         )
 
         row = ft.Row(
-            controls=[txt_path, btn_folder],
+            controls=[self.txt_path, btn_folder],
             alignment=ft.MainAxisAlignment.CENTER,
         )
 
@@ -51,8 +59,11 @@ class Configuration(ft.Column):
 
         self.controls.extend([column])
 
-    def search_directory(self, e):
-        pass
+    def search_directory(self, e: ft.FilePickerResultEvent):
+        if e.path:
+            self.path = e.path
+            self.txt_path.value = self.path
+            self.txt_path.update()
 
     def on_return(self, e):
         if self.on_return_callback:
