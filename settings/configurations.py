@@ -12,7 +12,7 @@ class Configuration(ft.Column):
 
         # Title
         title = ft.Text(
-            value="⚙️ Settings Page",
+            value="Settings Page",
             size=40,
             weight=ft.FontWeight.BOLD,
         )
@@ -24,7 +24,18 @@ class Configuration(ft.Column):
         btn_folder = ft.IconButton(
             icon=ft.Icons.FOLDER, icon_size=30, on_click=self.search_directory
         )
-        btn_return = ft.ElevatedButton(text="← Back", on_click=self.on_return)
+        btn_return = ft.ElevatedButton(
+            text="← Back",
+            height=64,
+            width=150,
+            style=ft.ButtonStyle(
+                text_style=ft.TextStyle(
+                    size=20,
+                    weight=ft.FontWeight.BOLD,
+                )
+            ),
+            on_click=self.on_return,
+        )
 
         row = ft.Row(
             controls=[txt_path, btn_folder],
