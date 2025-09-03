@@ -1,9 +1,13 @@
 import flet as ft
 
+from controllers.env_project_manager import EnvProjectManager
+
 
 class ProjectCreator(ft.Column):
     def __init__(self):
         super().__init__(expand=True)
+
+        self.saved_libraries = []
 
         # Textfields
         self.txt_project_name = ft.TextField(
@@ -64,6 +68,14 @@ class ProjectCreator(ft.Column):
             bgcolor="#303030",
         )
 
+        self.interactive_controls = [
+            self.txt_project_name,
+            self.txt_library_name,
+            self.btn_add_library,
+            self.btn_create_project,
+            self.library_list,
+        ]
+
         self.controls.extend(
             [
                 self.txt_project_name,
@@ -79,53 +91,75 @@ class ProjectCreator(ft.Column):
         self.btn_create_project.update()
 
     def create_project(self, e):
-        pass
+        project = EnvProjectManager(
+            self.txt_project_name.value,
+            "C:/new folder",
+            self.saved_libraries,
+        )
+
+        try:
+            self.disable_ui()
+            self.show_information_log("-- Please wait, project is being created --")
+            project.setup_project()
+            self.show_information_log(" -- project created successfully --")
+            self.enable_ui()
+        except Exception as erro:
+            self.show_information_log(f"{erro}")
+
+        finally:
+            self.txt_update_field(self.txt_project_name)
+            self.txt_update_field(self.txt_library_name)
 
     def add_library(self, e):
-        library = self.txt_library_name.value.strip()
+        nome = self.txt_library_name.value.strip()
 
-        # Extrai nomes das bibliotecas já adicionadas
-        library_names = [
-            row.controls[0].value
-            for row in self.library_list.controls
-            if isinstance(row, ft.Row) and isinstance(row.controls[0], ft.Text)
-        ]
-
-        if not library:
+        # Check if the name is empty
+        if not nome:
             return
 
-        if library in library_names:
-            self.show_information_log("-- library already added --")
-        else:
-            # Cria Text do nome da biblioteca
-            txt = ft.Text(value=library)
+        library = ft.Text(value=nome)
+        line = ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+        btn_delete_library = ft.IconButton(
+            icon=ft.Icons.DELETE,
+            icon_size=15,
+            on_click=lambda e, row=line: self.delete_library(row),
+        )
 
-            # Define função de remoção vinculada a este item
-            def remove_library(ev):
-                self.library_list.controls.remove(row)
-                self.library_list.update()
-                self.show_information_log(f"-- Removed library '{library}' --")
+        line.controls.extend([library, btn_delete_library])
 
-            # Cria Row com botão de deletar
-            row = ft.Row(
-                controls=[
-                    txt,
-                    ft.IconButton(
-                        icon=ft.Icons.DELETE,
-                        icon_size=15,
-                        tooltip="Remove library",
-                        on_click=remove_library,
-                    ),
-                ],
-                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            )
+        # Checks if the name already exists in the list
+        for item in self.library_list.controls:
+            for sub_item in item.controls:
+                if isinstance(sub_item, ft.Text) and sub_item.value.strip() == nome:
+                    self.txt_update_field(self.txt_library_name)
+                    self.show_information_log("-- library already added --")
+                    return
 
-            self.library_list.controls.append(row)
-            self.library_list.update()
-            self.show_information_log(f"-- Add library '{library}' --")
+        self.library_list.controls.append(line)
+        self.saved_libraries.append(nome)
 
-        self.txt_library_name.value = ""
-        self.txt_library_name.update()
+        self.txt_update_field(self.txt_library_name)
+        self.show_information_log(f"-- Add library '{library.value}' --")
+
+        self.library_list.update()
+
+    def delete_library(self, row):
+        item_removed = row.controls[0].value
+
+        self.library_list.controls.remove(row)
+        self.saved_libraries.remove(item_removed)
+
+        self.show_information_log(f"-- Removed library '{item_removed}' --")
+
+        self.library_list.update()
+
+    def txt_update_field(self, field):
+        field.value = ""
+        field.update()
+
+    def list_update(self):
+        self.library_list.clean()
+        self.library_list.update()
 
     def show_information_log(self, message: str):
         """Shows information about what is happening in the interactivity and creation of the project.
@@ -135,4 +169,16 @@ class ProjectCreator(ft.Column):
         """
         self.information_log.value = message
         self.information_log.update()
-        print(message)
+
+    def disable_ui(self):
+        for item in self.interactive_controls:
+            item.disabled = True
+            item.update()
+
+    def enable_ui(self):
+        for item in self.interactive_controls:
+            if item != self.btn_create_project:
+                item.disabled = False
+                item.update()
+
+        self.list_update()
