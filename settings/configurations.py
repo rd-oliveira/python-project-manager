@@ -2,10 +2,11 @@ import flet as ft
 
 
 class Configuration(ft.Column):
-    def __init__(self, page: ft.Page, on_return):
+    def __init__(self, page: ft.Page, on_return, config):
         super().__init__(expand=True)
 
         self.on_return_callback = on_return
+        self.config = config
         self.alignment = ft.MainAxisAlignment.CENTER
         self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         self.spacing = 20
@@ -24,13 +25,19 @@ class Configuration(ft.Column):
         )
 
         # Entries
-        self.txt_path = ft.TextField(label="project path", disabled=True)
+        self.txt_path_project = ft.TextField(
+            value=self.config,
+            label="project path",
+            disabled=True,
+        )
 
         # Buttons
         btn_folder = ft.IconButton(
             icon=ft.Icons.FOLDER,
             icon_size=30,
-            on_click=file_dialog.get_directory_path,
+            on_click=lambda _: file_dialog.get_directory_path(
+                dialog_title="Choose a folder"
+            ),
         )
         btn_return = ft.ElevatedButton(
             text="← Back",
@@ -46,7 +53,7 @@ class Configuration(ft.Column):
         )
 
         row = ft.Row(
-            controls=[self.txt_path, btn_folder],
+            controls=[self.txt_path_project, btn_folder],
             alignment=ft.MainAxisAlignment.CENTER,
         )
 
@@ -62,8 +69,8 @@ class Configuration(ft.Column):
     def search_directory(self, e: ft.FilePickerResultEvent):
         if e.path:
             self.path = e.path
-            self.txt_path.value = self.path
-            self.txt_path.update()
+            self.txt_path_project.value = self.path
+            self.txt_path_project.update()
 
     def on_return(self, e):
         if self.on_return_callback:

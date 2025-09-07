@@ -4,6 +4,7 @@ import flet as ft
 from services.project_creator import ProjectCreator
 from services.project_viewer import ProjectViewer
 from settings.configurations import Configuration
+from settings.initializer import UIConfig
 
 
 class App:
@@ -20,9 +21,15 @@ class App:
         self.page.title = "Project Management System"
         self.page.window.width = 800
         self.page.window.height = 600
-        self.page.window.maximizable = (False,)
-        self.page.window.resizable = (False,)
+        self.page.window.maximizable = False
+        self.page.window.resizable = False
         self.page.window.center()
+
+        self.initializer = UIConfig(
+            f"{self.page.title} (Projects)",
+            f"{self.page.title} settings",
+        )
+        self.initializer.setup()
 
     def build_interface(self):
         header = self._build_header()
@@ -71,7 +78,9 @@ class App:
     def settings(self, e):
         self.navigate_to(
             Configuration(
-                self.page, on_return=lambda: self.navigate_to(self.get_main_interface())
+                self.page,
+                on_return=lambda: self.navigate_to(self.get_main_interface()),
+                config=self.initializer.load_json()["project_path"],
             )
         )
 
