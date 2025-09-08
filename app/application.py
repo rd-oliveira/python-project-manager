@@ -1,3 +1,4 @@
+# app.py
 import flet as ft
 
 
@@ -10,14 +11,16 @@ from settings.initializer import UIConfig
 class App:
     def __init__(self, page: ft.Page):
         self.page = page
+        self.initializer: UIConfig | None = None
         self.setup()
 
     def setup(self):
-        self.configure_window()
-        self.build_interface()
+        self._configure_window()
+        self._configure_initializer()
+        self.navigate_to(self._build_main_layout())
 
-    def configure_window(self):
-        # Application window settings
+    def _configure_window(self):
+        """Configures the main window"""
         self.page.title = "Project Management System"
         self.page.window.width = 800
         self.page.window.height = 600
@@ -25,49 +28,45 @@ class App:
         self.page.window.resizable = False
         self.page.window.center()
 
+    def _configure_initializer(self):
+        """Initializes system settings"""
         self.initializer = UIConfig(
             f"{self.page.title} (Projects)",
             f"{self.page.title} settings",
         )
         self.initializer.setup()
 
-    def build_interface(self):
-        header = self._build_header()
-        body = self._build_body()
-
-        layout = ft.Column(
-            controls=[header, ft.Container(content=body, expand=True)], expand=True
-        )
-
-        self.navigate_to(layout)
-
     def _build_header(self):
-        self.title = ft.Text(
-            value="Project Manager".upper(),
+        """Builds the header"""
+        title = ft.Text(
+            value="PROJECT MANAGER",
             size=30,
             weight=ft.FontWeight.BOLD,
         )
 
-        self.btn_configuration = ft.IconButton(
+        btn_configuration = ft.IconButton(
             icon=ft.Icons.SETTINGS,
             icon_size=45,
-            tooltip="Configuration",
+            tooltip="Configurações",
             on_click=self.settings,
         )
 
-        container = ft.Container(
+        return ft.Container(
             content=ft.Row(
-                controls=[self.title, self.btn_configuration],
+                controls=[title, btn_configuration],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             ),
             padding=10,
         )
 
-        return container
-
     def _build_body(self):
+        """Builds the main body"""
         project_creator_interface = ProjectCreator()
-        project_viewer_interface = ProjectViewer()
+
+        config = self.initializer.load_json()
+        project_path = config.get("project_path", "")
+
+        project_viewer_interface = ProjectViewer(project_path)
 
         return ft.Row(
             controls=[project_creator_interface, project_viewer_interface],
@@ -75,30 +74,32 @@ class App:
             expand=True,
         )
 
+    def _build_main_layout(self):
+        """Returns the main layout (header + body)"""
+        return ft.Column(
+            controls=[
+                self._build_header(),
+                ft.Container(content=self._build_body(), expand=True),
+            ],
+            expand=True,
+        )
+
     def settings(self, e):
+        """Navigates to the Settings screen"""
         self.navigate_to(
             Configuration(
                 self.page,
-                on_return=lambda: self.navigate_to(self.get_main_interface()),
+                on_return=lambda: self.navigate_to(self._build_main_layout()),
                 config=self.initializer,
             )
         )
 
-    def get_main_interface(self):
-        """Returns to the main screen and rebuilds the interface"""
-        header = self._build_header()
-        body = self._build_body()
-
-        return ft.Column(
-            controls=[header, body],
-            expand=True,
-        )
-
     def navigate_to(self, component: ft.Control):
+        """Clears the screen and displays the specified component"""
         self.page.clean()
         self.page.add(component)
         self.page.update()
 
 
 def main():
-    ft.app(target=App)
+    ft.app(target=lambda page: App(page))
