@@ -1,13 +1,18 @@
+import os
+import platform
+import subprocess
 import flet as ft
+
+
 from pathlib import Path
 
 
 class ProjectViewer(ft.Column):
     def __init__(self, project_path: str):
         super().__init__(spacing=0, expand=True)
-
         self.project_path = Path(project_path) if project_path else None
 
+        # Title
         self.title = ft.Text(
             value="PROJECTS",
             color="#f0f0f0",
@@ -15,16 +20,16 @@ class ProjectViewer(ft.Column):
             weight=ft.FontWeight.BOLD,
         )
 
+        # Project list
         self.project_list = ft.ListView(
-            expand=1,
-            spacing=10,
-            padding=20,
-            auto_scroll=True,
+            expand=1, spacing=10, padding=20, auto_scroll=True
         )
 
-        self._view_projects()
-
+        # Build containers
         self.controls.extend([self._build_title(), self._build_project_list()])
+
+        # Load projects
+        self.refresh()
 
     def _build_title(self):
         return ft.Container(
@@ -43,26 +48,37 @@ class ProjectViewer(ft.Column):
             expand=1,
         )
 
-    def _view_projects(self):
-        """Loads the project list"""
+    def refresh(self):
+        """Reload the project list."""
         self.project_list.controls.clear()
-
         if not self.project_path or not self.project_path.exists():
-            self.project_list.controls.append(
-                ft.Text("Nenhum projeto encontrado", color="red")
-            )
-            return
-
-        for project in self.project_path.iterdir():
-            if project.is_dir():
-                self.project_list.controls.append(
-                    ft.ListTile(
-                        title=ft.Text(project.name),
-                        leading=ft.Icon(ft.Icons.FOLDER),
-                        on_click=lambda e, p=project: self._on_project_click(p),
+            self.project_list.controls.append(ft.Text("No projects found", color="red"))
+        else:
+            for project in self.project_path.iterdir():
+                if project.is_dir():
+                    self.project_list.controls.append(
+                        ft.ListTile(
+                            title=ft.Text(project.name),
+                            leading=ft.Icon(ft.Icons.FOLDER),
+                            on_click=lambda e, p=project: self._on_project_click(p),
+                        )
                     )
-                )
+        if self.project_list.page:
+            self.project_list.update()
 
     def _on_project_click(self, project: Path):
-        """Open project location"""
-        pass
+        project_path = project
+
+        if not os.path.exists(project_path):
+            raise FileNotFoundError(f"project_path not found: {project_path}")
+
+        operational_system = platform.system()
+
+        if operational_system == "Windows":
+            os.startfile(project_path)
+        elif operational_system == "Darwin":
+            subprocess.run(["open", project_path])
+        elif operational_system == "Linux":
+            subprocess.run(["xdg-open", project_path])
+        else:
+            raise OSError(f"Unsupported operating system: {operational_system}")
