@@ -80,7 +80,7 @@ class App:
             Configuration(
                 self.page,
                 on_return=lambda: self.navigate_to(self.get_main_interface()),
-                config=self.initializer.load_json()["project_path"],
+                config=self.initializer,
             )
         )
 
