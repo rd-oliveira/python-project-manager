@@ -1,8 +1,10 @@
-from pathlib import Path
 import os
 import platform
 import json
 import logging
+
+
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -19,21 +21,17 @@ class UIConfig:
         self.json_path = self.full_settings_path / "settings.json"
 
     def check_operating_system(self):
-        """Detects the current operating system and returns base and documents paths."""
         os_name = platform.system()
-
         if os_name == "Windows":
             return (
-                Path(os.getenv("SystemDrive", "C:") + os.sep),
-                Path(os.path.expanduser("~/Documents")),
+                Path(os.getenv("APPDATA")) / "PythonProjectManager",
+                Path.home() / "Documents",
             )
         elif os_name in ["Linux", "Darwin"]:
             return (Path.home(), Path.home() / "Documents")
-
         raise EnvironmentError("Unsupported operating system.")
 
     def create_project_folder(self) -> Path | None:
-        """Creates the project folder if it doesn't already exist."""
         try:
             self.full_project_path.mkdir(parents=True, exist_ok=True)
             return self.full_project_path
@@ -42,7 +40,6 @@ class UIConfig:
             return None
 
     def create_settings_folder(self) -> Path | None:
-        """Creates the settings/config folder if it doesn't already exist."""
         try:
             self.full_settings_path.mkdir(parents=True, exist_ok=True)
             logging.info(f"Settings folder: {self.full_settings_path}")
@@ -52,7 +49,6 @@ class UIConfig:
             return None
 
     def create_json(self) -> Path | None:
-        """Creates the settings.json file only if it doesn't exist."""
         if self.json_path.exists():
             logging.info("JSON file already exists. Skipping creation.")
             return self.json_path
@@ -69,7 +65,6 @@ class UIConfig:
             return None
 
     def load_json(self) -> dict | None:
-        """Loads the JSON file if it exists and returns its content."""
         try:
             if self.json_path.exists():
                 with self.json_path.open("r", encoding="utf-8") as file:
@@ -81,9 +76,7 @@ class UIConfig:
         return None
 
     def setup(self):
-        """Runs the setup process: creates config and project folders, and JSON if needed."""
         self.create_settings_folder()
         self.create_project_folder()
-
         if not self.json_path.exists():
             self.create_json()

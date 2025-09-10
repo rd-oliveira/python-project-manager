@@ -4,7 +4,9 @@ import flet as ft
 from services.ui_state_manager import UIStateManager
 from services.project_creator import ProjectCreator
 from services.project_viewer import ProjectViewer
+from settings.configurations import Configuration
 from settings.initializer import UIConfig
+from pathlib import Path
 
 
 class App:
@@ -18,11 +20,13 @@ class App:
         )
         self.ui_config.setup()
 
-        # Get project path from JSON
         json_data = self.ui_config.load_json()
         self.project_path = json_data.get("project_path") if json_data else "projects"
 
-        # Setup page UI
+        self.settings = Configuration(
+            self.page, self.ui_config, on_path_updated=self.update_project_path
+        )
+
         self.setup()
 
     def setup(self):
@@ -40,17 +44,20 @@ class App:
             value="PROJECT MANAGER", size=30, weight=ft.FontWeight.BOLD
         )
 
+        container_dialog = ft.Container(content=self.settings, width=500, height=300)
+
+        self.dialog = ft.AlertDialog(content=container_dialog, adaptive=True)
+
         self.btn_configuration = ft.IconButton(
             icon=ft.Icons.SETTINGS,
             icon_size=45,
             tooltip="Configuration",
-            on_click=self.settings,
+            on_click=lambda e: self.page.open(self.dialog),
         )
 
-        # Register configuration button in UI manager
         self.ui_manager.register_controls([self.btn_configuration])
 
-        container = ft.Container(
+        return ft.Container(
             content=ft.Row(
                 controls=[self.title, self.btn_configuration],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -58,38 +65,35 @@ class App:
             padding=10,
         )
 
-        return container
-
     def _build_body(self):
-        # Create ProjectViewer and ProjectCreator
         self.project_viewer_interface = ProjectViewer(self.project_path)
         self.project_creator_interface = ProjectCreator(
             self.project_path, self.project_viewer_interface, self.ui_manager
         )
 
-        return ft.Row(
+        self.body_row = ft.Row(
             controls=[self.project_creator_interface, self.project_viewer_interface],
             vertical_alignment=ft.CrossAxisAlignment.START,
             expand=True,
         )
+
+        return self.body_row
 
     def _build_main_layout(self):
         return ft.Column(
             controls=[self._build_header(), self._build_body()], expand=True
         )
 
-    def settings(self, e):
-        # Placeholder for settings screen
-        self.show_settings_dialog()
-
-    def show_settings_dialog(self):
-        # Here you can implement your configuration UI
-        ft.alert("Settings dialog would open here.")
-
     def navigate_to(self, layout: ft.Control):
         self.page.clean()
         self.page.add(layout)
         self.page.update()
+
+    def update_project_path(self, new_path: str):
+        self.project_path = new_path
+        self.project_viewer_interface.project_path = Path(new_path)
+        self.project_viewer_interface.refresh()
+        self.body_row.update()
 
 
 def main():

@@ -1,9 +1,10 @@
 import flet as ft
 
-
 from controllers.env_project_manager import EnvProjectManager
 from services.project_viewer import ProjectViewer
 from services.ui_state_manager import UIStateManager
+
+from pathlib import Path
 
 
 class ProjectCreator(ft.Column):
@@ -21,7 +22,6 @@ class ProjectCreator(ft.Column):
         self.saved_libraries = []
         self.saved_libraries_set = set()
 
-        # TextFields
         self.txt_project_name = ft.TextField(
             label="Project Name",
             on_change=self.check_project_name,
@@ -31,7 +31,6 @@ class ProjectCreator(ft.Column):
             label="Library Name", expand=True, on_submit=self.add_library
         )
 
-        # Buttons
         self.btn_add_library = ft.IconButton(
             icon=ft.Icons.ADD, on_click=self.add_library, tooltip="Add library"
         )
@@ -47,15 +46,11 @@ class ProjectCreator(ft.Column):
             expand=True,
         )
 
-        # Library list
         self.library_list = ft.ListView(
             spacing=10, padding=20, auto_scroll=True, expand=1
         )
-
-        # Log
         self.information_log = ft.Text(value="", color="#36da6a")
 
-        # Layout
         row_library = ft.Row(controls=[self.txt_library_name, self.btn_add_library])
         row_information_log = ft.Row(
             controls=[self.information_log],
@@ -80,7 +75,6 @@ class ProjectCreator(ft.Column):
             ]
         )
 
-        # Register controls with UI manager
         self.ui_manager.register_controls(
             [
                 self.txt_project_name,
@@ -105,8 +99,15 @@ class ProjectCreator(ft.Column):
             project.setup_project()
             self.show_information_log("Project created successfully!", "green")
 
-            # Refresh project viewer
+            self.project_viewer.project_path = Path(self.project_path)
             self.project_viewer.refresh()
+            if hasattr(self.project_viewer, "page") and self.project_viewer.page:
+                self.project_viewer.update()
+
+            self.saved_libraries.clear()
+            self.saved_libraries_set.clear()
+            self.library_list.controls.clear()
+            self.library_list.update()
 
         except Exception as error:
             self.show_information_log(f"Error: {error}", "red")
@@ -127,7 +128,6 @@ class ProjectCreator(ft.Column):
             self.txt_update_field(self.txt_library_name)
             return
 
-        # UI line
         line = ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
         library_text = ft.Text(value=library_name)
         btn_delete_library = ft.IconButton(
